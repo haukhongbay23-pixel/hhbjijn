@@ -1,0 +1,176 @@
+--// SERVICES
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local VirtualUser = game:GetService("VirtualUser")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local player = Players.LocalPlayer
+
+repeat task.wait() until player.Character
+repeat task.wait() until player.Character:FindFirstChild("HumanoidRootPart")
+
+pcall(function()
+    game.CoreGui:FindFirstChild("ChiiMenu"):Destroy()
+end)
+
+--// GUI
+local gui = Instance.new("ScreenGui",game.CoreGui)
+gui.Name = "ChiiMenu"
+
+local open = Instance.new("TextButton",gui)
+open.Size = UDim2.new(0,60,0,60)
+open.Position = UDim2.new(0.05,0,0.4,0)
+open.Text = "☰"
+open.BackgroundColor3 = Color3.fromRGB(20,20,20)
+open.TextColor3 = Color3.new(1,1,1)
+open.TextScaled = true
+Instance.new("UICorner",open).CornerRadius = UDim.new(1,0)
+
+local frame = Instance.new("Frame",gui)
+frame.Size = UDim2.new(0,320,0,320)
+frame.Position = UDim2.new(0.35,0,0.3,0)
+frame.BackgroundColor3 = Color3.fromRGB(15,15,15)
+frame.Visible = false
+Instance.new("UICorner",frame).CornerRadius = UDim.new(0,15)
+
+local title = Instance.new("TextLabel",frame)
+title.Size = UDim2.new(1,0,0,50)
+title.BackgroundTransparency = 1
+title.Text = "CHII HAUU HUB ALL SEA"
+title.TextColor3 = Color3.new(1,1,1)
+title.TextScaled = true
+title.Font = Enum.Font.GothamBold
+
+local function toggle(name,pos)
+    local b = Instance.new("TextButton",frame)
+    b.Size = UDim2.new(0.85,0,0,40)
+    b.Position = UDim2.new(0.075,0,pos,0)
+    b.Text = name.." : OFF"
+    b.BackgroundColor3 = Color3.fromRGB(35,35,35)
+    b.TextColor3 = Color3.new(1,1,1)
+    b.TextScaled = true
+    Instance.new("UICorner",b).CornerRadius = UDim.new(0,10)
+    return b
+end
+
+local farmBtn = toggle("Auto Farm",0.2)
+local fastBtn = toggle("Fast Attack",0.38)
+local bringBtn = toggle("Gom Quái",0.56)
+local questBtn = toggle("Auto Quest",0.74)
+
+local AutoFarm,FastAttack,BringMob,AutoQuest = false,false,false,false
+
+farmBtn.MouseButton1Click:Connect(function()
+    AutoFarm = not AutoFarm
+    farmBtn.Text = "Auto Farm : "..(AutoFarm and "ON" or "OFF")
+    farmBtn.BackgroundColor3 = AutoFarm and Color3.fromRGB(0,170,0) or Color3.fromRGB(35,35,35)
+end)
+
+fastBtn.MouseButton1Click:Connect(function()
+    FastAttack = not FastAttack
+    fastBtn.Text = "Fast Attack : "..(FastAttack and "ON" or "OFF")
+    fastBtn.BackgroundColor3 = FastAttack and Color3.fromRGB(0,170,0) or Color3.fromRGB(35,35,35)
+end)
+
+bringBtn.MouseButton1Click:Connect(function()
+    BringMob = not BringMob
+    bringBtn.Text = "Gom Quái : "..(BringMob and "ON" or "OFF")
+    bringBtn.BackgroundColor3 = BringMob and Color3.fromRGB(0,170,0) or Color3.fromRGB(35,35,35)
+end)
+
+questBtn.MouseButton1Click:Connect(function()
+    AutoQuest = not AutoQuest
+    questBtn.Text = "Auto Quest : "..(AutoQuest and "ON" or "OFF")
+    questBtn.BackgroundColor3 = AutoQuest and Color3.fromRGB(0,170,0) or Color3.fromRGB(35,35,35)
+end)
+
+--// LẤY LEVEL
+function GetLevel()
+    return player.Data.Level.Value
+end
+
+--// TỰ CHỌN QUEST THEO LEVEL (ALL SEA)
+function CheckQuest()
+    local lv = GetLevel()
+
+    -- SEA 1
+    if lv < 15 then
+        return "BanditQuest1",1
+    elseif lv < 30 then
+        return "JungleQuest",1
+    elseif lv < 60 then
+        return "BuggyQuest1",1
+    elseif lv < 100 then
+        return "DesertQuest",1
+    elseif lv < 200 then
+        return "SkyQuest",1
+    elseif lv < 300 then
+        return "ColosseumQuest",1
+    end
+
+    -- SEA 2
+    if lv >= 700 and lv < 875 then
+        return "Area1Quest",1
+    elseif lv < 1000 then
+        return "Area2Quest",1
+    elseif lv < 1100 then
+        return "MarineQuest3",1
+    end
+
+    -- SEA 3
+    if lv >= 1500 and lv < 1700 then
+        return "PiratePortQuest",1
+    elseif lv < 2000 then
+        return "AmazonQuest",1
+    else
+        return "TikiQuest",1
+    end
+end
+
+function GetMob()
+    if workspace:FindFirstChild("Enemies") then
+        for _,v in pairs(workspace.Enemies:GetChildren()) do
+            if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                return v
+            end
+        end
+    end
+end
+
+spawn(function()
+    while task.wait(0.1) do
+        if AutoFarm then
+            pcall(function()
+                if AutoQuest then
+                    local q,id = CheckQuest()
+                    ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest",q,id)
+                end
+
+                local mob = GetMob()
+                if mob then
+                    repeat task.wait()
+                        player.Character.HumanoidRootPart.CFrame =
+                            mob.HumanoidRootPart.CFrame * CFrame.new(0,12,0)
+
+                        if FastAttack then
+                            VirtualUser:Button1Down(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
+                            VirtualUser:Button1Up(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
+                        end
+
+                        if BringMob then
+                            for _,v in pairs(workspace.Enemies:GetChildren()) do
+                                if v:FindFirstChild("HumanoidRootPart") then
+                                    v.HumanoidRootPart.CFrame = mob.HumanoidRootPart.CFrame
+                                end
+                            end
+                        end
+                    until not AutoFarm or mob.Humanoid.Health <= 0
+                end
+            end)
+        end
+    end
+end)
+
+open.MouseButton1Click:Connect(function()
+    frame.Visible = not frame.Visible
+end)
